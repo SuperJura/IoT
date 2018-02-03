@@ -1,0 +1,228 @@
+<!DOCTYPE HTML>
+<!--
+        Phantom by HTML5 UP
+        html5up.net | @ajlkn
+        Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+    <head>
+        <title>Debug Ramp Application</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="http://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <!-- Wrapper -->
+        <div id="wrapper">
+
+            <nav class="navbar navbar-inverse">
+                <div class="container-fluid">
+                    <div class="navbar-header">
+                        <a class="navbar-brand" href="#">IoT - Ramp Debug Application</a>
+                        <div class="navbar-form navbar-left" id="connectForm">
+                            <div class="form-inline">
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Server IP address" id="serverIpAddress">
+                                </div>
+                                <div class="form-group">    
+                                    <input type="text" class="form-control" placeholder="Server Port" id="serverPort">
+                                </div>
+                                <div class="form-group">
+                                    <a onclick="return false;" class="btn btn-info" onmousedown="connectToServer(this)" href="">Connect to web socket server!</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </nav>
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    Sensor Data
+                </div>
+                <div class="panel-body">
+                    <ul class="list-group">
+                        <li class="list-group-item list-group-item-danger" id="s1">Sensor UP is INACTIVE</li>
+                        <li class="list-group-item list-group-item-danger" id="s2">Sensor DOWN is INACTIVE</li>
+                        <li class="list-group-item list-group-item-danger" id="s3">Sensor IN is INACTIVE</li>
+                        <li class="list-group-item list-group-item-danger" id="s4">Sensor OUT is INACTIVE</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Main -->
+            <div id="main">
+                <a onclick="return false;" 
+                   class="btn btn-info" 
+                   onmousedown="mDownPullRampUp()" 
+                   onmouseup="mUpStopPullingRampUp()" 
+                   id ="btnUp"
+                   href="">Podigni rampu!</a>
+                <a onclick="return false;" 
+                   class="btn btn-info" 
+                   onmousedown="mDownPullRampDown()" 
+                   onmouseup="mUpStopPullingRampDown()" 
+                   id ="btnDown"
+                   href="">Spusti rampu!</a>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script>
+
+            $(function () 
+                {
+                    $("#btnUp").on("touchstart", function(){
+                        mDownPullRampUp();
+                    });
+                    $("#btnUp").on("touchend", function(){
+                        mUpStopPullingRampUp();
+                    });
+                    
+                    $("#btnDown").on("touchstart", function(){
+                        mDownPullRampDown();
+                    });
+                    $("#btnDown").on("touchend", function(){
+                        mUpStopPullingRampDown();
+                    });
+                }
+            );
+
+            var ws;
+            function connectToServer(obj) {
+                if ("WebSocket" in window)
+                {
+                    console.log("nesto");
+                    // Let us open a web socket
+                    //var ws = new WebSocket("ws://172.20.12.31:81");						
+
+                    var ipAddress = jQuery("#serverIpAddress").val();
+                    var serverPort = jQuery("#serverPort").val();
+                    ws = new WebSocket("ws://" + ipAddress + ":" + serverPort);
+
+
+                    ws.onopen = function ()
+                    {
+                        // Web Socket is connected, send data using send()
+                        //alert("webSocket is connected");
+                        jQuery("#connection").html("webSocket is connected");
+                        jQuery("#connectForm").css("display", "none");
+                    };
+
+                    ws.onmessage = function (e)
+                    {
+                        if (e.data.length === 4)
+                        {
+                            adjustSensorsBasedOnServerData(e.data)
+                        }
+                    };
+
+                    ws.onclose = function ()
+                    {
+                        // websocket is closed.
+                        jQuery("#connection").html("webSocket is not connected");
+                    };
+
+                    window.onbeforeunload = function (event) {
+                        var ws = jQuery.data(document, "webSocket");
+                        ws.close();
+                    };
+
+                    jQuery(document).data("webSocket", ws);
+                }
+                else
+                {
+                    // The browser doesn't support WebSocket
+                    alert("WebSocket NOT supported by your Browser!");
+                }
+
+                window.setInterval(receiveStateOfSensors, 1000);
+            }
+
+            function mDownPullRampUp() {
+                // pošalji signal preko web socketa da počne dizat rampu.
+                webSocketSend("testApp:up");
+            }
+            function mUpStopPullingRampUp() {
+                // pošalji signal preko web socketa da prestane sa dizanjem rampe.
+                webSocketSend("testApp:stop");
+            }
+            function mDownPullRampDown() {
+                // pošalji signal preko web socketa da počne spuštat rampu.
+                webSocketSend("testApp:down");
+            }
+            function mUpStopPullingRampDown() {
+                // pošalji signal preko web socketa da prestane sa spuštanjem rampe.					
+                webSocketSend("testApp:stop");
+            }
+
+            function receiveStateOfSensors() {
+                webSocketSend("testApp:sensors");
+            }
+            function webSocketSend(message)
+            {
+                if ("WebSocket" in window)
+                {
+                    // Let us open a web socket
+                    var ws = jQuery.data(document, "webSocket");
+
+                    ws.send(message);
+                }
+                else
+                {
+                    // The browser doesn't support WebSocket
+                    alert("WebSocket NOT supported by your Browser!");
+                }
+            }
+
+            function adjustSensorsBasedOnServerData(sensorsCode)
+            {
+                for (i = 0; i < sensorsCode.length; i++)
+                {
+                    if (sensorsCode.charAt(i) == "1")
+                    {
+                        toggleSensor(i + 1, true);
+                    }
+                    else
+                    {
+                        toggleSensor(i + 1, false);
+                    }
+                }
+            }
+
+            //SENSORS
+            function toggleSensor(index, on)
+            {
+                if (on)
+                {
+                    $("#s" + index).text("Sensor " + getSensorNameByIndex(index) + " is ACTIVE");
+                    $("#s" + index).removeClass("list-group-item-danger");
+                    $("#s" + index).addClass("list-group-item-success");
+                }
+                else
+                {
+                    $("#s" + index).text("Sensor " + getSensorNameByIndex(index) + " is INACTIVE");
+                    $("#s" + index).removeClass("list-group-item-success");
+                    $("#s" + index).addClass("list-group-item-danger");
+                }
+            }
+
+            function getSensorNameByIndex(index)
+            {
+                switch (index)
+                {
+                    case 1:
+                        return "UP";
+                    case 2:
+                        return "DOWN";
+                    case 3:
+                        return "IN";
+                    case 4:
+                        return "OUT";
+                }
+            }
+        </script>
+
+    </body>
+</html>

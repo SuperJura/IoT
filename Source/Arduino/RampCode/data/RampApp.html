@@ -1,0 +1,476 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Ramp Application</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="http://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+        <style>
+            .slider {
+                overflow-y: hidden;
+                max-height: 200px;
+
+                -webkit-transition-property: all;
+                -webkit-transition-duration: .5s;
+                -webkit-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+
+                -moz-transition-property: all;
+                -moz-transition-duration: .5s;
+                -moz-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+
+                -ms-transition-property: all;
+                -ms-transition-duration: .5s;
+                -ms-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+
+                transition-property: all;
+                transition-duration: .5s;
+                transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+
+                background: rgba(0, 255, 0, 1);
+                height: 200px; 
+                width: 210px;
+            }
+
+            .slider.closed {
+                max-height: 0;
+            }		
+
+            #parkingAnimation {			
+                div.inline { float:left; }
+                .clearBoth { clear:both; }
+            }
+
+            .slider p 
+            {
+                text-align : center;
+                padding-top : 42%;				
+            }
+
+
+            #container_2 {
+                /* border: 1px solid; */
+                padding: .5em;
+                width: 5em;
+                height: 10em;
+                transition: 3s all;  /* rotate gradually instead of instantly */ 
+                transform-origin: bottom;
+            }
+
+            #container_2:hover {
+                -webkit-transform: rotate(90deg);  /* to support Safari and Android browser */
+                -ms-transform: rotate(90deg);      /* to support IE 9 */
+                transform: rotate(90deg);
+            }
+            .col-centered{
+                float: none;
+                margin: 0 auto;
+            }
+        </style>
+    </head>
+    <body>
+
+        <nav class="navbar navbar-inverse">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">IoT - Ramp Dashboard</a>
+                    <div class="navbar-form navbar-left" id="connectForm">
+                        <div class="form-inline">
+                            <div class="form-group">
+                                <input type="text" class="form-control" placeholder="Server IP address" id="serverIpAddress">
+                            </div>
+                            <div class="form-group">    
+                                <input type="text" class="form-control" placeholder="Server Port" id="serverPort">
+                            </div>
+                            <div class="form-group">
+                                <a onclick="return false;" class="btn btn-info" onmousedown="connectToServer(this)" href="">Connect to web socket server!</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            Current Ramp State
+                        </div>
+                        <div class="panel-body block-">
+                            <canvas id="MyCanvas" height="400" width="400"></canvas>
+                            <div style="display:none"> <input class="slideControl" min="0" max="65" type="range" id="CanvasRotation" value="0"/> </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            Current Sensors State
+                        </div>
+                        <div class="panel-body">
+                            <ul class="list-group">
+                                <li class="list-group-item list-group-item-danger" id="s1">Sensor UP is INACTIVE</li>
+                                <li class="list-group-item list-group-item-danger" id="s2">Sensor DOWN is INACTIVE</li>
+                                <li class="list-group-item list-group-item-danger" id="s3">Sensor IN is INACTIVE</li>
+                                <li class="list-group-item list-group-item-danger" id="s4">Sensor OUT is INACTIVE</li>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    Parking spots states
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-3">
+
+                            <div id="TakenParkingSpace1" style="float:left; height: 200px; width: 210px; border: 1px solid #ccc; background-color: red;">
+                                <span style="font-weight: bold; color: white; padding-top:42%;text-align:center; display: none;">Zauzeto mjesto</span>
+                                <div style="font-weight: bold; color: white;" class="slider" id="parkingSpace1">
+                                    <p>Slobodno mjesto</p>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div  id="TakenParkingSpace2" style="float:left; height: 200px; width: 210px; border: 1px solid #ccc; background-color: red;">
+                                <span style="font-weight: bold; color: white; padding-top:42%;text-align:center; display: none;">Zauzeto mjesto</span>
+                                <div style="font-weight: bold; color: white;" class="slider" id="parkingSpace2">
+                                    <p>Slobodno mjesto</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div  id="TakenParkingSpace3" style="float:left; height: 200px; width: 210px; border: 1px solid #ccc; background-color: red;">
+                                <span style="font-weight: bold; color: white; padding-top:42%;text-align:center; display: none;">Zauzeto mjesto</span>
+                                <div style="font-weight: bold; color: white;" class="slider" id="parkingSpace3">
+                                    <p>Slobodno mjesto</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div   id="TakenParkingSpace4" style="float:left;height: 200px; width: 210px; border: 1px solid #ccc; background-color: red;">
+                                <span style="font-weight: bold; color: white; padding-top:42%;text-align:center; display: none;">Zauzeto mjesto</span>
+                                <div style="font-weight: bold; color: white;" class="slider" id="parkingSpace4">
+                                    <p>Slobodno mjesto</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:none">
+            <p>
+                DEBUG
+            </p>
+            <button onclick="changeTextOnParkingSpot(1);">Toggle slider 1</button>
+            <button onclick="changeTextOnParkingSpot(2);">Toggle slider 2</button>
+            <button onclick="changeTextOnParkingSpot(3);">Toggle slider 3</button>
+            <button onclick="changeTextOnParkingSpot(4);">Toggle slider 4</button>
+        </div>
+
+        <footer class="container-fluid">
+            <blockquote>
+                <footer>Ivan Cicek, Matija Huremovic, Tomislav Ljubojevic, Jurica Adamek</footer>
+            </blockquote>
+        </footer>
+
+        <!-- Scripts -->
+        <script>
+
+            var initialScale = false;
+            var connectedToWebSockets = false;
+            var rampImgLoaded = false;
+            var rampTargetAngle = 0;
+            var rampCurrentAngle = 1;
+            $(function ()
+            {
+                startMoveRamp(0);
+            });
+
+            $(".slideControl").on("input", function ()
+            {
+                startMoveRamp(this.value);
+            });
+
+            //RAMP
+            function startMoveRamp(degrees)
+            {
+                rampTargetAngle = degrees;
+
+                var canvas = document.getElementById('MyCanvas');
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (initialScale == false) {
+                    ctx.scale(0.5, 0.5);
+                    initialScale = true;
+                }
+
+                var img = new Image();
+                img.src = 'https://i.imgur.com/Gwrxdnj.png';
+
+                updateRamp(ctx, img);
+            }
+
+            function updateRamp(ctx, img)
+            {
+                if (rampImgLoaded == false)
+                {
+                    $(img).on("load", function ()
+                    {
+                        drawRamp(ctx, img, rampCurrentAngle);
+                        rampImgLoaded = true;
+                    });
+                }
+                else
+                {
+                    drawRamp(ctx, img, rampCurrentAngle);
+                }
+
+                if (rampTargetAngle > rampCurrentAngle)
+                    rampCurrentAngle += 0.5;
+                else if (rampTargetAngle < rampCurrentAngle)
+                    rampCurrentAngle -= 0.5;
+
+
+                if (rampTargetAngle != rampCurrentAngle)
+                {
+                    requestAnimationFrame(function () {
+                        updateRamp(ctx, img);
+                    });
+                }
+            }
+
+            function drawRamp(ctx, img, degrees)
+            {
+                var radians = degrees * Math.PI / 180;
+
+                //Draw Ramp
+                ctx.save();
+                ctx.translate(-30, 500);
+                ctx.rotate(-radians);
+                ctx.drawImage(img, 0, 0);
+                ctx.restore();
+
+                //Draw Rectangle
+                ctx.rect(0, 500, 130, 250);
+                ctx.fillStyle = "#bbb";
+                ctx.fillRect(0, 500, 130, 250);
+                ctx.stroke();
+            }
+
+            function adjustRampBasedOnServerData(rampState)
+            {
+                rampState = parseInt(rampState);
+                var degrees = 0;
+                switch (rampState)
+                {
+                    case 1:
+                        degrees = 0;
+                        break;
+                    case 2:
+                        degrees = 60;
+                        break;
+                    case 3:
+                        degrees = 65;
+                        break;
+                    case 4:
+                        degrees = 5;
+                        break;
+                }
+                startMoveRamp(degrees);
+            }
+
+            //PARKING SPOTS
+            function changeTextOnParkingSpot(parkingSpaceNumber)
+            {
+                var id = "#TakenParkingSpace" + parkingSpaceNumber;
+                if (document.getElementById('parkingSpace' + parkingSpaceNumber).classList.contains('closed'))
+                {
+                    if (jQuery(id + " span").css("display") === "none")
+                    {
+                        jQuery(id + " span").css("display", "inline");
+                    }
+                    else
+                    {
+                        jQuery(id + " span").css("display", "none");
+                    }
+
+                    document.getElementById('parkingSpace' + parkingSpaceNumber).classList.toggle('closed');
+                    toggleSensor(parkingSpaceNumber, false);
+                }
+                else
+                {
+                    document.getElementById('parkingSpace' + parkingSpaceNumber).classList.toggle('closed');
+                    window.setTimeout(function ()
+                    {
+                        if (jQuery(id + " span").css("display") === "none")
+                        {
+                            jQuery(id + " span").css("display", "block");
+                            toggleSensor(parkingSpaceNumber, true);
+                        }
+                        else
+                        {
+                            jQuery(id + " span").css("display", "none");
+                        }
+                    }, 500);
+                }
+            }
+
+            function adjustParkingSpotsBasedOnServerData(parkingSpacesTaken)
+            {
+                for (i = 0; i < 4; ++i)
+                {
+                    var obj = document.getElementById('parkingSpace' + (i + 1));
+
+                    if (i + 1 > parkingSpacesTaken)
+                    {
+                        if (obj.classList.contains('closed'))
+                        {
+                            changeTextOnParkingSpot(i + 1);
+                        }
+                    }
+                    else
+                    {
+                        if (obj.classList.contains('closed') == false)
+                        {
+                            changeTextOnParkingSpot(i + 1);
+                        }
+                    }
+                }
+            }
+
+            //SENSORS
+            function toggleSensor(index, on)
+            {
+                if (on)
+                {
+                    $("#s" + index).text("Sensor " + getSensorNameByIndex(index) + " is ACTIVE");
+                    $("#s" + index).removeClass("list-group-item-danger");
+                    $("#s" + index).addClass("list-group-item-success");
+                }
+                else
+                {
+                    $("#s" + index).text("Sensor " + getSensorNameByIndex(index) + " is INACTIVE");
+                    $("#s" + index).removeClass("list-group-item-success");
+                    $("#s" + index).addClass("list-group-item-danger");
+                }
+            }
+            
+            function getSensorNameByIndex(index)
+            {
+                switch(index)
+                {
+                    case 1: return "UP";
+                    case 2: return "DOWN";
+                    case 3: return "IN";
+                    case 4: return "OUT";
+                }
+            }
+
+            function adjustSensorsBasedOnServerData(sensorsCode)
+            {
+                for (i = 0; i < sensorsCode.length; i++)
+                {
+                    if (sensorsCode.charAt(i) == "1")
+                    {
+                        toggleSensor(i + 1, true);
+                    }
+                    else
+                    {
+                        toggleSensor(i + 1, false);
+                    }
+                }
+            }
+
+            //SERVER CONNECTION
+            function connectToServer(obj)
+            {
+                if ("WebSocket" in window)
+                {
+                    // Let us open a web socket
+                    var ipAddress = jQuery("#serverIpAddress").val();
+                    var serverPort = jQuery("#serverPort").val();
+                    var ws = new WebSocket("ws://" + ipAddress + ":" + serverPort);
+
+                    ws.onopen = function ()
+                    {
+                        // Web Socket is connected, send data using send()
+                        //alert("webSocket is connected");
+                        jQuery("#connection").html("webSocket is connected");
+                        jQuery("#connectForm").css("display", "none");
+                    };
+
+                    ws.onmessage = function (e)
+                    {
+                        //Kada se primi data od 5, primi se stanje senzora te stanje rampe
+                        if (e.data.length == 5)
+                        {
+                            console.log(e.data[4]);
+                            adjustSensorsBasedOnServerData(e.data.substring(0, 4));
+                            adjustRampBasedOnServerData(e.data[4]);
+                            
+                        }
+                        //Kada se primi data od 1, primi se kolicina parkiranih auta
+                        else if (e.data.length == 1)
+                        {
+                            adjustParkingSpotsBasedOnServerData(e.data);
+                        }
+                    };
+
+                    ws.onclose = function ()
+                    {
+                        // websocket is closed.
+                        jQuery("#connection").html("webSocket is not connected");
+                        jQuery("#connectForm").css("display", "inline");
+                    };
+
+                    window.onbeforeunload = function (event) {
+                        var ws = jQuery.data(document.body, "webSocket");
+                        ws.close();
+                    };
+
+                    jQuery.data(document.body, "webSocket", ws);
+                }
+                else
+                {
+                    // The browser doesn't support WebSocket
+                    alert("WebSocket NOT supported by your Browser!");
+                }
+
+                window.setInterval(receiveStateOfSensors, 500);
+            }
+
+            function receiveStateOfSensors(obj)
+            {
+                webSocketSend("RampApp:sensors");
+                webSocketSend("RampApp:parkings");
+            }
+
+            function webSocketSend(message)
+            {
+                if ("WebSocket" in window)
+                {
+                    // Let us open a web socket
+                    var ws = jQuery.data(document.body, "webSocket");
+
+                    ws.send(message);
+                }
+                else
+                {
+                    // The browser doesn't support WebSocket
+                    alert("WebSocket NOT supported by your Browser!");
+                }
+            }
+
+        </script>
+
+    </body>
+</html>
